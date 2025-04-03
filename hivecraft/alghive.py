@@ -60,7 +60,6 @@ class Alghive:
     - It must be a class named Forge
     - It must have a method __init__(self, lines_count: int, unique_id: str = None)
     - It must have a method run(self) -> list
-    - It must have a method generate_line(self, index: int) -> str
     - All those methods must be implemented
     - The file must be executable
     """
@@ -76,7 +75,7 @@ class Alghive:
             return False
         
         forge = forge.Forge(1)
-        if not hasattr(forge, "__init__") or not hasattr(forge, "run") or not hasattr(forge, "generate_line"):
+        if not hasattr(forge, "__init__") or not hasattr(forge, "run"):
             print(f"File 'forge.py' does not contain all required methods.")
             return False
         
