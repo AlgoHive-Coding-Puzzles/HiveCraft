@@ -5,6 +5,8 @@ desc.xml is a file that contains the basic properties related to the puzzle of t
 <Properties xmlns="http://www.w3.org/2001/WMLSchema">
     <difficulty>HARD</difficulty>
     <language>fr</language>
+    <title>My Puzzle</title>
+    <order>1</order>
 </Properties>
 """
 class DescProps:
@@ -13,6 +15,8 @@ class DescProps:
         self.file_name = folder_name + "/props/desc.xml"
         self.difficulty = "EASY"
         self.language = "en"
+        self.title = "NO_TITLE"
+        self.order = 0
         
     def check_file_integrity(self):
         # If the file already exists
@@ -32,11 +36,13 @@ class DescProps:
                 file.write(f"<Properties xmlns=\"http://www.w3.org/2001/WMLSchema\">\n")
                 file.write(f"    <difficulty>{self.difficulty}</difficulty>\n")
                 file.write(f"    <language>{self.language}</language>\n")
+                file.write(f"    <title>{self.title}</title>\n")
+                file.write(f"    <order>{self.order}</order>\n")
                 file.write(f"</Properties>")
                 
     def check_content(self, content: str) -> bool:
         # Check if all required fields are present
-        if not self.check_field(content, "difficulty") or not self.check_field(content, "language"):
+        if not self.check_field(content, "difficulty") or not self.check_field(content, "language") or not self.check_field(content, "title") or not self.check_field(content, "order"):
             return False
         
         return True
