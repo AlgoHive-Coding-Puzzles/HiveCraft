@@ -2,6 +2,7 @@ import os
 import uuid
 import getpass
 import datetime
+from hivecraft.version import __version__
 
 """
 meta.xml is a file that contains the properties of the metadata of the Alghive file
@@ -9,6 +10,7 @@ meta.xml is a file that contains the properties of the metadata of the Alghive f
     <author>Éric</author>
     <created>2025-03-06T22:00:00Z</created>
     <modified>2025-03-06T22:00:00Z</modified>
+    <hivecraft_version>0.4.1</hivecraft_version>
     <title>Meta</title>
     <id>1</id>
 </Properties>
@@ -20,6 +22,7 @@ class MetaProps:
         self.author = getpass.getuser()
         self.created = datetime.datetime.now() 
         self.modified = datetime.datetime.now()
+        self.hivecraft_version = __version__
         self.title = "Meta"
         self.id = self.generate_uuid()
         
@@ -37,6 +40,7 @@ class MetaProps:
             self.author = content.split("<author>")[1].split("</author>")[0]
             self.created = content.split("<created>")[1].split("</created>")[0]
             self.modified = content.split("<modified>")[1].split("</modified>")[0]
+            self.hivecraft_version = content.split("<hivecraft_version>")[1].split("</hivecraft_version>")[0]
             self.title = content.split("<title>")[1].split("</title>")[0]
             self.id = content.split("<id>")[1].split("</id>")[0]
             self.modified = datetime.datetime.now()
@@ -52,13 +56,14 @@ class MetaProps:
             file.write(f"    <author>{self.author}</author>\n")
             file.write(f"    <created>{self.created}</created>\n")
             file.write(f"    <modified>{self.modified}</modified>\n")
+            file.write(f"    <hivecraft_version>{self.hivecraft_version}</hivecraft_version>\n")
             file.write(f"    <title>{self.title}</title>\n")
             file.write(f"    <id>{self.id}</id>\n")
             file.write(f"</Properties>")
                 
     def check_content(self, content: str) -> bool:
         # Check if all required fields are present
-        if not self.check_field(content, "author") or not self.check_field(content, "created") or not self.check_field(content, "modified") or not self.check_field(content, "title") or not self.check_field(content, "id"):
+        if not self.check_field(content, "author") or not self.check_field(content, "created") or not self.check_field(content, "modified") or not self.check_field(content, "title") or not self.check_field(content, "id") or not self.check_field(content, "hivecraft_version"):
             return False
         
         return True
