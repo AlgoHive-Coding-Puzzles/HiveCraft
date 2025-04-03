@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hivecraft
-          path: hivecraft/dist/*
+          path: dist/*
 
       - name: Publish package to GitHub Packages
         run: |

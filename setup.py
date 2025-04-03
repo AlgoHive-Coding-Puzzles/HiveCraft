@@ -8,5 +8,5 @@ setup(
     ],
     author='Éric PHILIPPE',
     author_email='ericphlpp@proton.me',
-    description='Hivecraft is a tool to zip a folder with .alghive extension !',
+    description='Hivecraft is a tool to zip a folder with .alghive extension.',
 )
