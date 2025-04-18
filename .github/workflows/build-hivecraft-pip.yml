@@ -26,7 +26,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install build
+          pip install build pytest pytest-cov
+
+      - name: Run tests
+        run: |
+          pytest tests/
 
       - name: Build package
         run: |

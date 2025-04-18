@@ -6,7 +6,7 @@
 
 ## Hivecraft - AlgoHive file forge
 
-Hivecraft is a python module for creating and managing AlgoHive puzzles. It is a tool for developers to create, test, manage and compile puzzles for the AlgoHive platform. AlgoHive works by using a proprietary file format to define puzzles, and Hivecraft is a tool to help developers create these files.
+Hivecraft is a python module for creating and managing AlgoHive puzzles. It is a tool for developers to create, test, manage and compile puzzles for the AlgoHive platform. AlgoHive works by using a proprietary file format to define puzzles, and Hivecraft is a tool to help developers create these files. It comes with the required modules to implement tools around the `HiveCraft` logic. It also comes with a complete CLI.
 
 ## AlgoHive
 
@@ -15,23 +15,21 @@ AlgoHive is a web, self-hostable plateform that allows developers to create puzz
 ## Table of contents
 
 - [Hivecraft- AlgoHive file forge](#hivecraft---algohive-file-forge)
-  - [AlgoHive](#algohive)
-  - [Table of contents](#table-of-contents)
-  - [Installation](#installation)
-    - [Creating a new puzzle](#creating-a-new-puzzle)
-    - [Compiling a puzzle](#compiling-a-puzzle)
-    - [Testing a puzzle](#testing-a-puzzle)
-    - [Listing puzzles](#listing-puzzles)
-    - [Removing a puzzle](#removing-a-puzzle)
-  - [AlgoHive file format](#algohive-file-format)
-    - [Contents of the file](#contents-of-the-file)
-      - [`forge.py`](#forgepy)
-      - [`decrypt.py`](#decryptpy)
-      - [`unveil.py`](#unveilpy)
-      - [`cipher.html`](#cipherhtml)
-      - [`unveil.html`](#unveilhtml)
-      - [`props/meta.xml`](#propsmetaxml)
-      - [`props/desc.xml`](#propsdescxml)
+- [AlgoHive](#algohive)
+- [Table of contents](#table-of-contents)
+- [Installation](#installation)
+- [Run the CLI](#run-the-cli)
+- [Run unit tests](#run-unit-tests)
+- [AlgoHive file format](#algohive-file-format)
+  - [Contents of the file](#contents-of-the-file)
+    - [`forge.py`](#forgepy)
+    - [`decrypt.py`](#decryptpy)
+    - [`unveil.py`](#unveilpy)
+    - [`cipher.html`](#cipherhtml)
+    - [`obscure.html`](#obscurehtml)
+    - [`props/meta.xml`](#propsmetaxml)
+    - [`props/desc.xml`](#propsdescxml)
+- [License](#license)
 
 ## Installation
 
@@ -39,16 +37,27 @@ To use Hivecraft, you need to have Python 3.6 or higher installed on your system
 Install the package using pip:
 
 ```bash
-pip install git+https://github.com/Eric-Philippe/AlgoHive.git#subdirectory=hivecraft
+pip install hivecraft
 ```
 
-### Updating the package
+## Run the CLI
+
+To run the CLI, you need to have Python 3.6 or higher installed on your system. You can run the CLI using the following command:
 
 ```bash
-pip install --upgrade --force-reinstall git+https://github.com/ton-utilisateur/AlgoHive.git#subdirectory=hivecraft
+# If installed using pip
+hivecraft {command}
+# Or in development mode
+python3 -m hivecraft {command}
 ```
 
-> The `--test` flag will run random tests on the puzzles in the folder. The `--test-count` flag will specify the number of tests to run.
+## Run unit tests
+
+To run the unit tests, you need to have Python 3.6 or higher installed on your system. You can run the unit tests using the following command:
+
+```bash
+python3 -m pytest tests/
+```
 
 ## AlgoHive file format
 
@@ -64,17 +73,17 @@ The file contains the following directories and files:
 | `decrypt.py`     | This executable python file will decrypt the input and output the solution for the first part of the puzzle  |
 | `unveil.py`      | This executable python file will decrypt the input and output the solution for the second part of the puzzle |
 | `cipher.html`    | This HTML file contains the puzzle's first part text and example input/output.                               |
-| `unveil.html`    | This HTML file contains the puzzle's second part text and example input/output.                              |
+| `obscure.html`   | This HTML file contains the puzzle's second part text and example input/output.                              |
 | `props/`         | This directory contains the properties of the puzzle, such as the author, creation date and difficulty.      |
 | `props/meta.xml` | This XML file contains the meta properties of the file                                                       |
 | `props/desc.xml` | This markdown file contains the description of the puzzle.                                                   |
 
 #### `forge.py`
 
-This file is an executable python file that will generate a unique input for a given seed for the puzzle. The file should contain a class called `Forge` that has a method constructor `__init__` that takes a lines_count and a seed as arguments. The class should have a method called `run` that returns a list of strings that will be the input for the puzzle. The implementation should be inside the `generate_line` method that contains an index as an argument and returns a string. The python file should be executable and should generate the input file `input.txt` for debugging purposes.
+This file is an executable python file that will generate a unique input for a given seed for the puzzle. The file should contain a class called `Forge` that has a method constructor `__init__` that takes a lines_count and a seed as arguments. The class should have a method called `run` that returns a list of strings that will be the input for the puzzle. The python file should be executable and should generate the input file `input.txt` for debugging purposes.
 
 ```python
-# forge.py - Génère input.txt
+# forge.py - Generate input for the puzzle
 import sys
 import random
 
@@ -90,10 +99,6 @@ class Forge:
             lines.append(self.generate_line(_))
         return lines
 
-    def generate_line(self, index: int) -> str:
-        # TODO: TO BE IMPLEMENTED
-        pass
-
 if __name__ == '__main__':
     lines_count = int(sys.argv[1])
     unique_id = sys.argv[2]
@@ -102,8 +107,6 @@ if __name__ == '__main__':
     with open('input.txt', 'w') as f:
         f.write('\n'.join(lines))
 ```
-
-> Using this template will allow to just focus on the `generate_line` method to generate the input for the puzzle.
 
 #### `decrypt.py`
 
@@ -166,7 +169,7 @@ This file is an HTML file that contains the puzzle's first part text and example
 </article>
 ```
 
-#### `unveil.html`
+#### `obscure.html`
 
 This file is an HTML file that contains the puzzle's second part text and example input/output. The file must contain a `<article>` surrounding the content. The content can be written using `<p>` tags for paragraphs and `<pre>` or `<code>` tags for code blocks. This file should contain basic examples of the input and output of the puzzle.
 
@@ -193,6 +196,7 @@ This file is an XML file that contains the meta properties of the file. The file
     <author>$AUTHOR</author>
     <created>$CREATED</created>
     <modified>$MODIFIED</modified>
+    <hivecraft_version>$HIVECRAFT_VERSION</hivecraft_version>
     <title>Meta</title>
     <id>$UNIQUE_ID</id>
 </Properties>
@@ -208,6 +212,8 @@ This file is an XML file that contains the description of the puzzle. The file s
 <Properties xmlns="http://www.w3.org/2001/WMLSchema">
     <difficulty>$DIFFICULTY</difficulty>
     <language>$LANGUAGE</language>
+    <title>$TITLE</title>
+    <index>$INDEX</index>
 </Properties>
 ```
 

@@ -2,205 +2,134 @@ import os
 import random
 import string
 import zipfile
-import importlib.util
 import sys
-
-from hivecraft.descprops import DescProps
-from hivecraft.metaprops import MetaProps
+import time
+from hivecraft.props import *
+from hivecraft.scripts import *
+from hivecraft.prompts import *
 
 class Alghive:
     EXTENSION = '.alghive'
     EXECUTABLES_REQUIRED = ["forge.py", "decrypt.py", "unveil.py"]
     PROMPTS_REQUIRED = ["cipher.html", "obscure.html"]
     PROPS_FOLDER = "props"
-    AUTHORIZED_ELEMENTS = ["__pycache__", "meta.xml"]
-    
-    def __init__(self, folder_name):
-        if not os.path.isdir(folder_name):
+
+    def __init__(self, folder_name, skip_folder_check=False):
+        if not skip_folder_check and not os.path.isdir(folder_name):
             raise ValueError(f"The folder '{folder_name}' does not exist.")
-        
+
         self.folder_name = folder_name.rstrip("/")
         self.zip_file_name = f"{folder_name}{self.EXTENSION}"
+
+        # Instantiate script handlers
+        self.forge = ForgeScript(self.folder_name)
+        self.decrypt = DecryptScript(self.folder_name)
+        self.unveil = UnveilScript(self.folder_name)
         
-    def check_integrity(self, update: bool = False):
+        # Instantiate prompt handlers
+        self.cipher_prompt = CipherPrompt(self.folder_name)
+        self.obscure_prompt = ObscurePrompt(self.folder_name)
+
+        # Instantiate property handlers
+        self.meta_props = MetaProps(self.folder_name)
+        self.desc_props = DescProps(self.folder_name)
+
+    def check_integrity(self):
         # If one of the checks fails, raise an exception
         if not self.check_files():
             raise ValueError(f"Folder '{self.folder_name}' does not respect the file constraints.")
-        
-        if not self.check_forge():
+
+        if not self.forge.validate():
             raise ValueError(f"Folder '{self.folder_name}' does not respect the forge constraints.")
-        
-        if not self.check_decrypt():
+
+        if not self.decrypt.validate():
             raise ValueError(f"Folder '{self.folder_name}' does not respect the decrypt constraints.")
-        
-        if not self.check_unveil():
+
+        if not self.unveil.validate():
             raise ValueError(f"Folder '{self.folder_name}' does not respect the unveil constraints.")
+
+        if not self.cipher_prompt.validate():
+            raise ValueError(f"Folder '{self.folder_name}' does not respect the cipher prompt constraints.")
         
-        if not self.check_html():
-            raise ValueError(f"Folder '{self.folder_name}' does not respect the html constraints.")
-        
+        if not self.obscure_prompt.validate():
+            raise ValueError(f"Folder '{self.folder_name}' does not respect the obscure prompt constraints.")
+
         try:
-            self.generate_props(update)
+            self.desc_props.check_file_integrity()
+            self.meta_props.check_file_integrity()
         except ValueError as e:
             raise ValueError(f"Folder '{self.folder_name}' does not respect the props constraints: {e}")
-        
-        
-    def check_files(self):        
+
+
+    def check_files(self):
         # Check if all required files are present
         FILES_REQUIRED = self.EXECUTABLES_REQUIRED + self.PROMPTS_REQUIRED
         for file in FILES_REQUIRED:
             if not os.path.isfile(os.path.join(self.folder_name, file)):
-                print(f"File '{file}' is missing in the folder '{self.folder_name}'.")
+                print(f"> Error: File '{file}' is missing in the folder '{self.folder_name}'.")
                 return False
-        
+
         return True
-    
-    """
-    The file forge.py must respect the following constraints:
-    - It must be a class named Forge
-    - It must have a method __init__(self, lines_count: int, unique_id: str = None)
-    - It must have a method run(self) -> list
-    - All those methods must be implemented
-    - The file must be executable
-    """
-    def check_forge(self):
-        try:
-            forge = self.load_module("forge")
-        except ImportError:
-            print(f"File 'forge.py' is not importable.")
-            return False
-        
-        if not hasattr(forge, "Forge"):
-            print(f"File 'forge.py' does not contain a class named 'Forge'.")
-            return False
-        
-        forge = forge.Forge(1)
-        if not hasattr(forge, "__init__") or not hasattr(forge, "run"):
-            print(f"File 'forge.py' does not contain all required methods.")
-            return False
-        
-        return True
-    
-    """
-    The file decrypt.py must respect the following constraints:
-    - It must be a class named Decrypt
-    - It must have a method __init__(self, lines: list)
-    - It must have a method run(self) -> int
-    - All those methods must be implemented
-    - The file must be executable
-    """
-    def check_decrypt(self):
-        try:
-            decrypt = self.load_module("decrypt")
-        except ImportError:
-            print(f"File 'decrypt.py' is not importable.")
-            return False
-        
-        if not hasattr(decrypt, "Decrypt"):
-            print(f"File 'decrypt.py' does not contain a class named 'Decrypt'.")
-            return False
-        
-        decrypt = decrypt.Decrypt([1])
-        if not hasattr(decrypt, "__init__") or not hasattr(decrypt, "run"):
-            print(f"File 'decrypt.py' does not contain all required methods.")
-            return False
-        
-        return True
-    
-    """
-    The file unveil.py must respect the following constraints:
-    - It must be a class named Unveil
-    - It must have a method __init__(self, lines: list)
-    - It must have a method run(self) -> int
-    - All those methods must be implemented
-    - The file must be executable
-    """
-    def check_unveil(self):
-        try:
-            unveil = self.load_module("unveil")
-        except ImportError:
-            print(f"File 'unveil.py' is not importable.")
-            return False
-        
-        if not hasattr(unveil, "Unveil"):
-            print(f"File 'unveil.py' does not contain a class named 'Unveil'.")
-            return False
-        
-        unveil = unveil.Unveil([1])
-        if not hasattr(unveil, "__init__") or not hasattr(unveil, "run"):
-            print(f"File 'unveil.py' does not contain all required methods.")
-            return False
-        
-        return True
-    
-    """
-    Check HTML files, they must respect the following constraints:
-    - The first and last html tag must be <article>
-    """
-    def check_html(self):
-        for file in self.PROMPTS_REQUIRED:
-            with open(os.path.join(self.folder_name, file)) as f:
-                content = f.read()
-                content = content.replace(" ", "").replace("\n", "")
-                if not content.startswith("<article>") or not content.endswith("</article>"):
-                    print(f"File '{file}' does not start and end with <article> tag.")
-                    return False
-        
-        return True
-    
-    def load_module(self, file_name):
-        spec = importlib.util.spec_from_file_location(file_name, os.path.join(self.folder_name, file_name + ".py"))
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[file_name] = module
-        spec.loader.exec_module(module)
-        return module
-        
+
     def zip_folder(self):
         # Create the zip file name with .alghive extension
-        file_name = self.folder_name.split("/")[-1]
+        file_name = os.path.basename(self.folder_name) # Use basename for the zip filename
         zip_file_name = f"{file_name}{self.EXTENSION}"
+
+        # Ensure properties are written before zipping
+        self.meta_props.write_file()
+        self.desc_props.write_file()
 
         # Create a zip file with .alghive extension
         with zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for root, dirs, files in os.walk(self.folder_name):
+                # Exclude __pycache__ directories
+                dirs[:] = [d for d in dirs if d != '__pycache__']
                 for file in files:
+                    # Exclude .pyc files
+                    if file.endswith('.pyc'):
+                        continue
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, start=self.folder_name)
                     zipf.write(file_path, arcname)
 
-        print(f"Folder '{self.folder_name}' has been zipped as '{zip_file_name}'.")
-                    
-        
-    def generate_props(self, update: bool = False):
-        # Ensure the props folder exists
-        if not os.path.isdir(f"{self.folder_name}/{self.PROPS_FOLDER}"):
-            os.mkdir(f"{self.folder_name}/{self.PROPS_FOLDER}")
-        
-        meta_props = MetaProps(self.folder_name)
-        meta_props.check_file_integrity(update)
-        
-        desc_props = DescProps(self.folder_name)
-        desc_props.check_file_integrity()
-                
     def run_tests(self, count):
         print(f"Running {count} tests...")
         
-        forge = self.load_module("forge")
-        decrypt = self.load_module("decrypt")
-        unveil = self.load_module("unveil")
+        # Setup progress bar
+        bar_length = 40
+        failed = 0
         
-        for _ in range(count):
-            lines = forge.Forge(100, self.generate_random_key()).run()
-            decrypt.Decrypt(lines).run()
-            unveil.Unveil(lines).run()
+        # Run tests with progress bar
+        for i in range(count):
+            # Update progress bar
+            progress = (i + 1) / count
+            block = int(round(bar_length * progress))
+            progress_bar = "[" + "=" * block + " " * (bar_length - block) + "]"
+            percent = int(round(progress * 100))
             
-        print(f"Tests passed successfully.")
+            # Print the progress bar and overwrite the same line
+            sys.stdout.write(f"\r  Progress: {progress_bar} {percent}% ({i+1}/{count})")
+            sys.stdout.flush()
+            
+            try:
+                random_key = self.generate_random_key()
+                lines = self.forge.run(lines_count=100, unique_id=random_key)
+                self.decrypt.run(lines=lines)
+                self.unveil.run(lines=lines)
+            except (RuntimeError, FileNotFoundError, ImportError, AttributeError, TypeError, Exception) as e:
+                failed += 1
+                print(f"\n> Test {i+1} failed: {e}")
+                raise RuntimeError(f"Test failed during execution.") from e
         
+        # Move to next line after progress bar completion
+        print()
+        print(f"All {count} tests passed successfully.")
+
     def generate_random_key(self):
         return ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
 
 
-            
-        
-        
-        
+
+
+
