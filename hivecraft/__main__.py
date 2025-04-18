@@ -214,6 +214,11 @@ def main():
     # Version command is just a flag on the main parser
     parser.add_argument('--version', '-v', action='version', version=f'hivecraft {__version__}')
     
+    # If no arguments were provided, print help and exit
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        return 1 # Indicate error or non-standard exit
+
     args = parser.parse_args()
     
     return args.func(args)
