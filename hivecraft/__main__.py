@@ -52,23 +52,77 @@ def create_puzzle(args):
     return 0
 
 
-def compile_puzzle(args):
-    """Test Compiles a puzzle folder into an .alghive file."""
-    folder_name = args.folder
+def _compile_single_puzzle(folder_name, skip_test=False, test_count=100):
+    """Compiles a single puzzle folder. Returns True on success, False on failure."""
     try:
         alghive = Alghive(folder_name)
         alghive.check_integrity()
-        if not args.skip_test:
-            alghive.run_tests(args.test_count)
+        if not skip_test:
+            alghive.run_tests(test_count)
         alghive.zip_folder()
         print(Fore.GREEN + f"Successfully compiled '{folder_name}' into '{os.path.basename(folder_name)}.alghive'")
-        return 0
+        return True
     except ValueError as e:
-        print(Fore.RED + f"Error: {e}")
-        return 1
+        print(Fore.RED + f"Error compiling '{folder_name}': {e}")
+        return False
     except RuntimeError as e:
-        print(Fore.RED + f"Error during execution: {e}")
+        print(Fore.RED + f"Error during execution for '{folder_name}': {e}")
+        return False
+    except FileNotFoundError:
+        print(Fore.RED + f"Error: Folder '{folder_name}' or required files not found.")
+        return False
+    except Exception as e:
+        print(Fore.RED + f"An unexpected error occurred for '{folder_name}': {e}")
+        return False
+
+
+def compile_puzzle(args):
+    """Compiles a puzzle folder into an .alghive file."""
+    folder_name = args.folder
+    if not os.path.isdir(folder_name):
+        print(Fore.RED + f"Error: '{folder_name}' is not a valid directory.")
         return 1
+
+    if _compile_single_puzzle(folder_name, args.skip_test, args.test_count):
+        return 0
+    else:
+        return 1
+
+
+def compile_all_puzzles(args):
+    """Compiles all puzzle folders within a given directory."""
+    base_directory = args.directory
+    if not os.path.isdir(base_directory):
+        print(Fore.RED + f"Error: '{base_directory}' is not a valid directory.")
+        return 1
+
+    success_count = 0
+    fail_count = 0
+    total_count = 0
+
+    print(f"Scanning directory '{base_directory}' for puzzle folders...")
+
+    for item in os.listdir(base_directory):
+        item_path = os.path.join(base_directory, item)
+        if os.path.isdir(item_path):
+            # Basic check: does it look like a puzzle folder? (e.g., contains forge.py)
+            # You might want a more robust check here.
+            if os.path.exists(os.path.join(item_path, 'forge.py')):
+                print(f"\nAttempting to compile '{item_path}'...")
+                total_count += 1
+                if _compile_single_puzzle(item_path, args.skip_test, args.test_count):
+                    success_count += 1
+                else:
+                    fail_count += 1
+            else:
+                print(Fore.YELLOW + f"Skipping '{item_path}': Does not appear to be a puzzle folder (missing forge.py).")
+
+    print("\n--- Compilation Summary ---")
+    print(f"Total folders processed: {total_count}")
+    print(Fore.GREEN + f"Successful compilations: {success_count}")
+    print(Fore.RED + f"Failed compilations: {fail_count}")
+
+    return 1 if fail_count > 0 else 0
 
 
 def extract_alghive(args):
@@ -118,8 +172,8 @@ def main():
     """Main entry point for the CLI."""
     colorama.init(autoreset=True)
     parser = argparse.ArgumentParser(description=f"HiveCraft v{__version__} - AlgoHive puzzle management tool")
-    subparsers = parser.add_subparsers(dest='command', help='Command to execute')
-    
+    subparsers = parser.add_subparsers(dest='command', help='Command to execute', required=True)
+
     # Create command
     create_parser = subparsers.add_parser('create', help='Create a new puzzle folder')
     create_parser.add_argument('name', help='Name of the puzzle folder to create')
@@ -127,13 +181,19 @@ def main():
     create_parser.set_defaults(func=create_puzzle)
     
     # Compile command
-    compile_parser = subparsers.add_parser('compile', help='Compile a puzzle folder into an .alghive file')
+    compile_parser = subparsers.add_parser('compile', help='Compile a single puzzle folder into an .alghive file')
     compile_parser.add_argument('folder', help='Path to the puzzle folder')
-    compile_parser.add_argument('--test', '-t', action='store_true', help='Run tests before compiling')
     compile_parser.add_argument('--skip-test', '-s', action='store_true', help='Skip running tests before compiling')
-    compile_parser.add_argument('--test-count', type=int, default=100, help='Number of tests to run (default: 5)')
+    compile_parser.add_argument('--test-count', type=int, default=100, help='Number of tests to run (default: 100)')
     compile_parser.set_defaults(func=compile_puzzle)
-    
+
+    # Compile All command
+    compile_all_parser = subparsers.add_parser('compile-all', help='Compile all puzzle folders within a directory')
+    compile_all_parser.add_argument('directory', help='Path to the directory containing puzzle folders')
+    compile_all_parser.add_argument('--skip-test', '-s', action='store_true', help='Skip running tests before compiling')
+    compile_all_parser.add_argument('--test-count', type=int, default=100, help='Number of tests to run (default: 100)')
+    compile_all_parser.set_defaults(func=compile_all_puzzles)
+
     # Extract command
     extract_parser = subparsers.add_parser('extract', help='Extract an .alghive file to a folder')
     extract_parser.add_argument('file', help='Path to the .alghive file')
@@ -151,10 +211,6 @@ def main():
     parser.add_argument('--version', '-v', action='version', version=f'hivecraft {__version__}')
     
     args = parser.parse_args()
-    
-    if args.command is None:
-        parser.print_help()
-        return 0
     
     return args.func(args)
 
