@@ -14,7 +14,7 @@ with open(os.path.join('hivecraft', 'version.py'), 'r') as f:
 setup(
     name='hivecraft',
     version=version,
-    packages=find_packages(include=['hivecraft', 'hivecraft.*']),
+    packages=find_packages(exclude=['tests']),
     install_requires=[],
     tests_require=[
         'pytest>=6.0.0',
