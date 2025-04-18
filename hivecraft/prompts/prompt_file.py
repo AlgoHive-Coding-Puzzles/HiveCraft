@@ -23,9 +23,29 @@ class PromptFile(ABC):
         try:
             with open(self.filepath, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
+                
+                # Check if the file starts and ends with <article> tag
                 if not content.startswith("<article>") or not content.endswith("</article>"):
                     print(f"> Error: File '{self.filename}' does not start and end with <article> tag after stripping whitespace.")
                     return False
+                
+                # Check if the file contains a non-closed tag
+                if content.count("<") != content.count(">"):
+                    print(f"> Error: File '{self.filename}' contains non-closed tags.")
+                    return False
+                
+                # Check for the presence of <a> tags and check if they are not empty and if the href attribute points to a valid URL
+                if "<a " in content:
+                    if not any(tag.startswith("<a href=") for tag in content.split("<a ")[1:]):
+                        print(f"> Error: File '{self.filename}' does not contain valid <a> tags.")
+                        return False
+                    # Check if the href attribute points to a valid URL
+                    for tag in content.split("<a ")[1:]:
+                        if 'href="' in tag:
+                            href = tag.split('href="')[1].split('"')[0]
+                            if not href.startswith("http://") and not href.startswith("https://"):
+                                print(f"> Error: Invalid URL in <a> tag in file '{self.filename}'.")
+                                return False
         except Exception as e:
             print(f"> Error reading or validating prompt file '{self.filename}': {e}")
             return False

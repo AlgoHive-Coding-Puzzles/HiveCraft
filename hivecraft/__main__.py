@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """
 Command-line interface for HiveCraft
 """
@@ -9,6 +6,8 @@ import argparse
 import os
 import sys
 import zipfile
+import colorama
+from colorama import Fore
 from hivecraft.alghive import Alghive
 from hivecraft.version import __version__
 from hivecraft.scripts import ForgeScript, DecryptScript, UnveilScript
@@ -20,7 +19,7 @@ def create_puzzle(args):
     folder_name = args.name
     if os.path.exists(folder_name):
         if not args.force:
-            print(f"Error: Folder '{folder_name}' already exists. Use --force to overwrite.")
+            print(Fore.RED + f"Error: Folder '{folder_name}' already exists. Use --force to overwrite.")
             return 1
     
     os.makedirs(folder_name, exist_ok=True)
@@ -49,7 +48,7 @@ def create_puzzle(args):
     alghive.meta_props.check_file_integrity()
     alghive.desc_props.check_file_integrity()
     
-    print(f"Successfully created new puzzle in '{folder_name}'")
+    print(Fore.GREEN + f"Successfully created new puzzle in '{folder_name}'")
     return 0
 
 
@@ -62,13 +61,13 @@ def compile_puzzle(args):
         if not args.skip_test:
             alghive.run_tests(args.test_count)
         alghive.zip_folder()
-        print(f"Successfully compiled '{folder_name}' into '{os.path.basename(folder_name)}.alghive'")
+        print(Fore.GREEN + f"Successfully compiled '{folder_name}' into '{os.path.basename(folder_name)}.alghive'")
         return 0
     except ValueError as e:
-        print(f"Error: {e}")
+        print(Fore.RED + f"Error: {e}")
         return 1
     except RuntimeError as e:
-        print(f"Error during execution: {e}")
+        print(Fore.RED + f"Error during execution: {e}")
         return 1
 
 
@@ -76,25 +75,25 @@ def extract_alghive(args):
     """Extracts an .alghive file to a folder."""
     file_path = args.file
     if not file_path.endswith('.alghive'):
-        print(f"Error: File '{file_path}' is not an .alghive file.")
+        print(Fore.RED + f"Error: File '{file_path}' is not an .alghive file.")
         return 1
     
     output_folder = args.output or os.path.splitext(os.path.basename(file_path))[0]
     if os.path.exists(output_folder) and not args.force:
-        print(f"Error: Folder '{output_folder}' already exists. Use --force to overwrite.")
+        print(Fore.RED + f"Error: Folder '{output_folder}' already exists. Use --force to overwrite.")
         return 1
     
     try:
         os.makedirs(output_folder, exist_ok=True)
         with zipfile.ZipFile(file_path, 'r') as zip_ref:
             zip_ref.extractall(output_folder)
-        print(f"Successfully extracted '{file_path}' to '{output_folder}'")
+        print(Fore.GREEN + f"Successfully extracted '{file_path}' to '{output_folder}'")
         return 0
     except zipfile.BadZipFile:
-        print(f"Error: '{file_path}' is not a valid zip file.")
+        print(Fore.RED + f"Error: '{file_path}' is not a valid zip file.")
         return 1
     except Exception as e:
-        print(f"Error extracting file: {e}")
+        print(Fore.RED + f"Error extracting file: {e}")
         return 1
 
 
@@ -105,18 +104,19 @@ def verify_puzzle(args):
         alghive = Alghive(folder_name)
         alghive.check_integrity()
         alghive.run_tests(args.count)
-        print(f"All tests passed for '{folder_name}'")
+        print(Fore.GREEN + f"All tests passed for '{folder_name}'")
         return 0
     except ValueError as e:
-        print(f"Error: {e}")
+        print(Fore.RED + f"Error: {e}")
         return 1
     except RuntimeError as e:
-        print(f"Error during execution: {e}")
+        print(Fore.RED + f"Error during execution: {e}")
         return 1
 
 
 def main():
     """Main entry point for the CLI."""
+    colorama.init(autoreset=True)
     parser = argparse.ArgumentParser(description=f"HiveCraft v{__version__} - AlgoHive puzzle management tool")
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
     
@@ -144,7 +144,7 @@ def main():
     # Test command
     test_parser = subparsers.add_parser('test', help='Test a puzzle folder')
     test_parser.add_argument('folder', help='Path to the puzzle folder')
-    test_parser.add_argument('--count', '-c', type=int, default=10, help='Number of tests to run (default: 10)')
+    test_parser.add_argument('--count', '-c', type=int, default=100, help='Number of tests to run (default: 100)')
     test_parser.set_defaults(func=verify_puzzle)
 
     # Version command is just a flag on the main parser
