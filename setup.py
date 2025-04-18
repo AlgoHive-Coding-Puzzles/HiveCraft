@@ -22,8 +22,9 @@ setup(
         'hivecraft.props.meta',
         'hivecraft.scripts'
     ],
-    # packages=find_packages(exclude=['tests']), # Replace this line
-    install_requires=[],
+    install_requires=[
+        "colorama"
+        ],
     tests_require=[
         'pytest>=6.0.0',
         'pytest-cov>=2.10.0',

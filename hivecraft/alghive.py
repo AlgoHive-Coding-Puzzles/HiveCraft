@@ -3,7 +3,6 @@ import random
 import string
 import zipfile
 import sys
-import time
 from hivecraft.props import *
 from hivecraft.scripts import *
 from hivecraft.prompts import *
