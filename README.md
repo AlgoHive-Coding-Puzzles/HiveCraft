@@ -20,6 +20,11 @@ AlgoHive is a web, self-hostable plateform that allows developers to create puzz
 - [Installation](#installation)
 - [Run the CLI](#run-the-cli)
 - [Run unit tests](#run-unit-tests)
+- [CLI Documentation](#cli-documentation)
+  - [`hivecraft create`](#hivecraft-create)
+  - [`hivecraft compile`](#hivecraft-compile)
+  - [`hivecraft extract`](#hivecraft-extract)
+  - [`hivecraft test`](#hivecraft-test)
 - [AlgoHive file format](#algohive-file-format)
   - [Contents of the file](#contents-of-the-file)
     - [`forge.py`](#forgepy)
@@ -29,6 +34,12 @@ AlgoHive is a web, self-hostable plateform that allows developers to create puzz
     - [`obscure.html`](#obscurehtml)
     - [`props/meta.xml`](#propsmetaxml)
     - [`props/desc.xml`](#propsdescxml)
+- [Module Documentation](#module-documentation)
+  - [`Alghive` class](#alghive-class)
+  - [`DescProps` class](#descprops-class)
+  - [`MetaProps` class](#metaprops-class)
+  - [`PUZZLES_DIFFICULTY`](#puzzles_difficulty)
+  - [`__version__`](#__version__)
 - [License](#license)
 
 ## Installation
@@ -58,6 +69,64 @@ To run the unit tests, you need to have Python 3.6 or higher installed on your s
 ```bash
 python3 -m pytest tests/
 ```
+
+## CLI Documentation
+
+The `hivecraft` command-line tool provides several commands to manage AlgoHive puzzles.
+
+### `hivecraft create`
+
+Creates a new puzzle folder structure with template files.
+
+```bash
+hivecraft create <name> [--force | -f]
+```
+
+**Arguments:**
+
+- `<name>`: (Required) The name of the puzzle folder to create.
+- `--force`, `-f`: (Optional) Overwrite the folder if it already exists.
+
+### `hivecraft compile`
+
+Compiles a puzzle folder into a `.alghive` file. By default, it runs tests before compiling.
+
+```bash
+hivecraft compile <folder> [--skip-test | -s] [--test-count <count>]
+```
+
+**Arguments:**
+
+- `<folder>`: (Required) Path to the puzzle folder.
+- `--skip-test`, `-s`: (Optional) Skip running tests before compiling.
+- `--test-count <count>`: (Optional) Number of tests to run if testing is enabled (default: 100).
+
+### `hivecraft extract`
+
+Extracts the contents of an `.alghive` file into a folder.
+
+```bash
+hivecraft extract <file> [--output | -o <output_folder>] [--force | -f]
+```
+
+**Arguments:**
+
+- `<file>`: (Required) Path to the `.alghive` file.
+- `--output`, `-o <output_folder>`: (Optional) Specify the output folder name. Defaults to the `.alghive` filename without the extension.
+- `--force`, `-f`: (Optional) Overwrite the output folder if it already exists.
+
+### `hivecraft test`
+
+Runs integrity checks and execution tests on a puzzle folder.
+
+```bash
+hivecraft test <folder> [--count | -c <count>]
+```
+
+**Arguments:**
+
+- `<folder>`: (Required) Path to the puzzle folder.
+- `--count`, `-c <count>`: (Optional) Number of test cycles to run (default: 10). Each cycle generates input, runs decrypt, and runs unveil.
 
 ## AlgoHive file format
 
@@ -216,6 +285,36 @@ This file is an XML file that contains the description of the puzzle. The file s
     <index>$INDEX</index>
 </Properties>
 ```
+
+## Module Documentation
+
+The `hivecraft` Python package provides classes and constants for programmatic interaction with AlgoHive puzzles.
+
+### `Alghive` class
+
+The main class for managing an AlgoHive puzzle folder.
+
+- **Initialization**: `Alghive(folder_name)`
+- **Methods**:
+  - `check_integrity()`: Validates the folder structure, required files, script classes, and property files. Raises `ValueError` on failure.
+  - `run_tests(count)`: Executes the `forge`, `decrypt`, and `unveil` scripts `count` times with random seeds to check for runtime errors. Raises `RuntimeError` on failure.
+  - `zip_folder()`: Compiles the validated puzzle folder into an `.alghive` file in the current working directory.
+
+### `DescProps` class
+
+Handles reading, validating, and writing the `props/desc.xml` file. Attributes (`difficulty`, `language`, `title`, `index`) are dynamically assigned and can be accessed/modified directly.
+
+### `MetaProps` class
+
+Handles reading, validating, and writing the `props/meta.xml` file. Attributes (`author`, `created`, `modified`, `hivecraft_version`, `title`, `id`) are dynamically assigned and can be accessed/modified directly. The `modified` timestamp is automatically updated when writing.
+
+### `PUZZLES_DIFFICULTY`
+
+A list of strings representing the valid difficulty levels: `['EASY', 'MEDIUM', 'HARD', 'EXPERT']`.
+
+### `__version__`
+
+A string containing the installed version of the `hivecraft` package.
 
 # License
 
