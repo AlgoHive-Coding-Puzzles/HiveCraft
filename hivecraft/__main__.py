@@ -6,12 +6,17 @@ import argparse
 import os
 import sys
 import zipfile
-import colorama
-from colorama import Fore
 from hivecraft.alghive import Alghive
 from hivecraft.version import __version__
 from hivecraft.scripts import ForgeScript, DecryptScript, UnveilScript
 from hivecraft.prompts import CipherPrompt, ObscurePrompt
+
+
+# ANSI escape codes for colors
+COLOR_RED = "\033[91m"
+COLOR_GREEN = "\033[92m"
+COLOR_YELLOW = "\033[93m"
+COLOR_RESET = "\033[0m"
 
 
 def create_puzzle(args):
@@ -19,7 +24,7 @@ def create_puzzle(args):
     folder_name = args.name
     if os.path.exists(folder_name):
         if not args.force:
-            print(Fore.RED + f"Error: Folder '{folder_name}' already exists. Use --force to overwrite.")
+            print(COLOR_RED + f"Error: Folder '{folder_name}' already exists. Use --force to overwrite." + COLOR_RESET)
             return 1
     
     os.makedirs(folder_name, exist_ok=True)
@@ -48,7 +53,7 @@ def create_puzzle(args):
     alghive.meta_props.check_file_integrity()
     alghive.desc_props.check_file_integrity()
     
-    print(Fore.GREEN + f"Successfully created new puzzle in '{folder_name}'")
+    print(COLOR_GREEN + f"Successfully created new puzzle in '{folder_name}'" + COLOR_RESET)
     return 0
 
 
@@ -60,19 +65,19 @@ def _compile_single_puzzle(folder_name, skip_test=False, test_count=100):
         if not skip_test:
             alghive.run_tests(test_count)
         alghive.zip_folder()
-        print(Fore.GREEN + f"Successfully compiled '{folder_name}' into '{os.path.basename(folder_name)}.alghive'")
+        print(COLOR_GREEN + f"Successfully compiled '{folder_name}' into '{os.path.basename(folder_name)}.alghive'" + COLOR_RESET)
         return True
     except ValueError as e:
-        print(Fore.RED + f"Error compiling '{folder_name}': {e}")
+        print(COLOR_RED + f"Error compiling '{folder_name}': {e}" + COLOR_RESET)
         return False
     except RuntimeError as e:
-        print(Fore.RED + f"Error during execution for '{folder_name}': {e}")
+        print(COLOR_RED + f"Error during execution for '{folder_name}': {e}" + COLOR_RESET)
         return False
     except FileNotFoundError:
-        print(Fore.RED + f"Error: Folder '{folder_name}' or required files not found.")
+        print(COLOR_RED + f"Error: Folder '{folder_name}' or required files not found." + COLOR_RESET)
         return False
     except Exception as e:
-        print(Fore.RED + f"An unexpected error occurred for '{folder_name}': {e}")
+        print(COLOR_RED + f"An unexpected error occurred for '{folder_name}': {e}" + COLOR_RESET)
         return False
 
 
@@ -80,7 +85,7 @@ def compile_puzzle(args):
     """Compiles a puzzle folder into an .alghive file."""
     folder_name = args.folder
     if not os.path.isdir(folder_name):
-        print(Fore.RED + f"Error: '{folder_name}' is not a valid directory.")
+        print(COLOR_RED + f"Error: '{folder_name}' is not a valid directory." + COLOR_RESET)
         return 1
 
     if _compile_single_puzzle(folder_name, args.skip_test, args.test_count):
@@ -93,7 +98,7 @@ def compile_all_puzzles(args):
     """Compiles all puzzle folders within a given directory."""
     base_directory = args.directory
     if not os.path.isdir(base_directory):
-        print(Fore.RED + f"Error: '{base_directory}' is not a valid directory.")
+        print(COLOR_RED + f"Error: '{base_directory}' is not a valid directory." + COLOR_RESET)
         return 1
 
     success_count = 0
@@ -115,12 +120,12 @@ def compile_all_puzzles(args):
                 else:
                     fail_count += 1
             else:
-                print(Fore.YELLOW + f"Skipping '{item_path}': Does not appear to be a puzzle folder (missing forge.py).")
+                print(COLOR_YELLOW + f"Skipping '{item_path}': Does not appear to be a puzzle folder (missing forge.py)." + COLOR_RESET)
 
     print("\n--- Compilation Summary ---")
     print(f"Total folders processed: {total_count}")
-    print(Fore.GREEN + f"Successful compilations: {success_count}")
-    print(Fore.RED + f"Failed compilations: {fail_count}")
+    print(COLOR_GREEN + f"Successful compilations: {success_count}" + COLOR_RESET)
+    print(COLOR_RED + f"Failed compilations: {fail_count}" + COLOR_RESET)
 
     return 1 if fail_count > 0 else 0
 
@@ -129,25 +134,25 @@ def extract_alghive(args):
     """Extracts an .alghive file to a folder."""
     file_path = args.file
     if not file_path.endswith('.alghive'):
-        print(Fore.RED + f"Error: File '{file_path}' is not an .alghive file.")
+        print(COLOR_RED + f"Error: File '{file_path}' is not an .alghive file." + COLOR_RESET)
         return 1
     
     output_folder = args.output or os.path.splitext(os.path.basename(file_path))[0]
     if os.path.exists(output_folder) and not args.force:
-        print(Fore.RED + f"Error: Folder '{output_folder}' already exists. Use --force to overwrite.")
+        print(COLOR_RED + f"Error: Folder '{output_folder}' already exists. Use --force to overwrite." + COLOR_RESET)
         return 1
     
     try:
         os.makedirs(output_folder, exist_ok=True)
         with zipfile.ZipFile(file_path, 'r') as zip_ref:
             zip_ref.extractall(output_folder)
-        print(Fore.GREEN + f"Successfully extracted '{file_path}' to '{output_folder}'")
+        print(COLOR_GREEN + f"Successfully extracted '{file_path}' to '{output_folder}'" + COLOR_RESET)
         return 0
     except zipfile.BadZipFile:
-        print(Fore.RED + f"Error: '{file_path}' is not a valid zip file.")
+        print(COLOR_RED + f"Error: '{file_path}' is not a valid zip file." + COLOR_RESET)
         return 1
     except Exception as e:
-        print(Fore.RED + f"Error extracting file: {e}")
+        print(COLOR_RED + f"Error extracting file: {e}" + COLOR_RESET)
         return 1
 
 
@@ -158,19 +163,18 @@ def verify_puzzle(args):
         alghive = Alghive(folder_name)
         alghive.check_integrity()
         alghive.run_tests(args.count)
-        print(Fore.GREEN + f"All tests passed for '{folder_name}'")
+        print(COLOR_GREEN + f"All tests passed for '{folder_name}'" + COLOR_RESET)
         return 0
     except ValueError as e:
-        print(Fore.RED + f"Error: {e}")
+        print(COLOR_RED + f"Error: {e}" + COLOR_RESET)
         return 1
     except RuntimeError as e:
-        print(Fore.RED + f"Error during execution: {e}")
+        print(COLOR_RED + f"Error during execution: {e}" + COLOR_RESET)
         return 1
 
 
 def main():
     """Main entry point for the CLI."""
-    colorama.init(autoreset=True)
     parser = argparse.ArgumentParser(description=f"HiveCraft v{__version__} - AlgoHive puzzle management tool")
     subparsers = parser.add_subparsers(dest='command', help='Command to execute', required=True)
 
