@@ -29,11 +29,6 @@ class PromptFile(ABC):
                     print(f"> Error: File '{self.filename}' does not start and end with <article> tag after stripping whitespace.")
                     return False
                 
-                # Check if the file contains a non-closed tag
-                if content.count("<") != content.count(">"):
-                    print(f"> Error: File '{self.filename}' contains non-closed tags.")
-                    return False
-                
                 # Check for the presence of <a> tags and check if they are not empty and if the href attribute points to a valid URL
                 if "<a " in content:
                     if not any(tag.startswith("<a href=") for tag in content.split("<a ")[1:]):
